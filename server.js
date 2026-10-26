@@ -4,7 +4,7 @@ const express = require('express'), crypto = require('crypto'), fs = require('fs
 const PORT = +process.env.PORT || 3000;
 const DATA = process.env.DATA_FILE || path.join(__dirname, 'data', 'db.json');
 const TTL = 12 * 3600 * 1000; // مدة الجلسة: 12 ساعة
-const REC_KEYS = ['suspects', 'evidence', 'legal', 'operations', 'circulars', 'classified'];
+const REC_KEYS = ['suspects', 'evidence', 'legal', 'operations', 'circulars', 'classified', 'vehicles', 'vault'];
 const ALL_PERMS = ['roster', 'schedule', 'ranks', ...REC_KEYS, 'radar', 'board', 'comms', 'sector'];
 const SEC = { people: 'roster', sched: 'schedule', ranks: 'ranks', pins: 'radar' };
 
@@ -49,6 +49,7 @@ if (!db) {
 
 db.state.board = db.state.board || { nodes: [], links: [] };
 db.audit = db.audit || [];
+REC_KEYS.forEach(k => { db.state.rec[k] = db.state.rec[k] || []; });
 const sign = s => crypto.createHmac('sha256', db.secret).update(s).digest('base64url');
 const mkToken = u => { const b = Buffer.from(JSON.stringify({ u, exp: Date.now() + TTL })).toString('base64url'); return b + '.' + sign(b); };
 function readToken(t) {
@@ -72,7 +73,7 @@ const fail = ip => { const t = tries.get(ip); tries.set(ip, t && Date.now() - t.
 const app = express();
 if (process.env.TRUST_PROXY) app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use(express.json({ limit: '8mb' }));
+app.use(express.json({ limit: '25mb' }));
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'");
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -126,14 +127,18 @@ const N = v => Number.isFinite(+v) ? +v : 0;
 const arr = a => a.filter(x => x && typeof x === 'object');
 const san = {
   people: a => arr(a).map(p => ({ n: S_(p.n, 100), b: N(p.b), r: S_(p.r, 100), s: S_(p.s, 20), o: S_(p.o, 300) })),
-  sched: a => arr(a).map(e => ({ d: S_(e.d, 20), f: S_(e.f, 10), e: S_(e.e, 10), x: S_(e.x, 200), a: S_(e.a, 100) })),
+  sched: a => arr(a).map(e => ({ d: S_(e.d, 20), f: /^\d{2}:\d{2}$/.test(e.f) ? e.f : '', e: /^\d{2}:\d{2}$/.test(e.e) ? e.e : '', x: S_(e.x, 200), a: S_(e.a, 100) })),
   ranks: a => arr(a).map(r => ({ en: S_(r.en, 100), ar: S_(r.ar, 100), l: N(r.l), c: /^#[0-9a-f]{6}$/i.test(r.c) ? r.c : '#888888' })),
   pins: a => arr(a).map(p => ({ n: S_(p.n, 100), x: N(p.x), y: N(p.y) })),
   board: b => ({
     nodes: arr(b.nodes || []).slice(0, 300).map(n => ({ id: S_(n.id, 20).replace(/\W/g, ''), t: S_(n.t, 20), n: S_(n.n, 100), o: S_(n.o, 300), x: N(n.x), y: N(n.y) })),
     links: arr(b.links || []).slice(0, 600).map(l => ({ a: S_(l.a, 20), b: S_(l.b, 20), l: S_(l.l, 60) }))
   }),
-  rec: a => arr(a).map(r => ({ t: S_(r.t, 200), d: S_(r.d, 2000), tag: S_(r.tag, 30), st: S_(r.st, 30) }))
+  rec: a => arr(a).map(r => ({ t: S_(r.t, 200), d: S_(r.d, 2000), tag: S_(r.tag, 30), st: S_(r.st, 30) })),
+  /* المركبات: رقم اللوحة + حتى 4 صور (data URL) */
+  vehicles: a => arr(a).map(v => ({ pl: S_(v.pl, 40), m: S_(v.m, 100), o: S_(v.o, 2000), imgs: (Array.isArray(v.imgs) ? v.imgs : []).filter(s => typeof s === 'string' && s.length < 1.5e6 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s)).slice(0, 4) })),
+  /* الخزنة: نص مشفّر في المتصفح فقط (عنصر واحد). أي قيمة غير base64 يُرفض الطلب كله بدل أن تتلف الخزنة */
+  vault: a => arr(a).slice(0, 1).map(v => { const b = (x, n) => { x = String(x ?? ''); if (!x || x.length > n || !/^[A-Za-z0-9+/=]+$/.test(x)) throw new Error('bad vault'); return x; }; return { s: b(v.s, 64), i: b(v.i, 64), c: b(v.c, 4e6) }; })
 };
 const imgOk = v => v === '' || (typeof v === 'string' && v.length < 3e6 && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v));
 
@@ -148,8 +153,8 @@ app.put('/api/state', auth, (req, res) => {
     else if (k === 'board') { if (has(u, 'board') && v && typeof v === 'object' && !Array.isArray(v)) { st.board = san.board(v); ok = true; } }
     else if (k.startsWith('rec.')) {
       const r = k.slice(4);
-      if (REC_KEYS.includes(r) && has(u, r) && Array.isArray(v) && v.length <= 2000) { st.rec[r] = san.rec(v); ok = true; }
-    } else if (san[k] && SEC[k] && Array.isArray(v) && v.length <= 2000 && has(u, SEC[k])) { st[k] = san[k](v); ok = true; }
+      if (REC_KEYS.includes(r) && has(u, r) && Array.isArray(v) && v.length <= 2000) { try { st.rec[r] = (san[r] || san.rec)(v); ok = true; } catch {} }
+    } else if (Object.hasOwn(SEC, k) && san[k] && Array.isArray(v) && v.length <= 2000 && has(u, SEC[k])) { st[k] = san[k](v); ok = true; }
     if (!ok) rejected.push(k);
   }
   const done = Object.keys(req.body || {}).filter(k => !rejected.includes(k));
@@ -204,5 +209,5 @@ app.delete('/api/users/:u', auth, adminOnly, (req, res) => {
 
 app.get('/api/audit', auth, adminOnly, (req, res) => res.json(db.audit.slice(-40).reverse()));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use((err, req, res, next) => res.status(400).json({ error: 'طلب غير صالح' }));
+app.use((err, req, res, next) => err && err.type === 'entity.too.large' ? res.status(413).json({ error: 'حجم البيانات كبير جداً، قلّل عدد الصور' }) : res.status(400).json({ error: 'طلب غير صالح' }));
 app.listen(PORT, () => console.log('الخادم يعمل على المنفذ ' + PORT));
