@@ -1,278 +1,197 @@
-require('dotenv').config();
-const express = require('express');
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const path = require('path');
+'use strict';
+const express = require('express'), crypto = require('crypto'), fs = require('fs'), path = require('path');
 
-let db;
-async function initDb() {
-    db = await open({
-        filename: path.join(__dirname, 'database.sqlite'),
-        driver: sqlite3.Database
-    });
+const PORT = +process.env.PORT || 3000;
+const DATA = process.env.DATA_FILE || path.join(__dirname, 'data', 'db.json');
+const TTL = 12 * 3600 * 1000; // مدة الجلسة: 12 ساعة
+const REC_KEYS = ['suspects', 'evidence', 'legal', 'operations', 'circulars', 'classified'];
+const ALL_PERMS = ['roster', 'schedule', 'ranks', ...REC_KEYS, 'radar', 'comms', 'sector'];
+const SEC = { people: 'roster', sched: 'schedule', ranks: 'ranks', pins: 'radar' };
 
-    // إنشاء الجداول تلقائياً لو لم تكن موجودة
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS agents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            pass_hash TEXT,
-            role TEXT
-        );
-        CREATE TABLE IF NOT EXISTS sessions (
-            token TEXT PRIMARY KEY,
-            agent_id INTEGER,
-            expires DATETIME
-        );
-        CREATE TABLE IF NOT EXISTS meta (
-            id INTEGER PRIMARY KEY,
-            version INTEGER
-        );
-        INSERT OR IGNORE INTO meta (id, version) VALUES (1, 1);
-
-        CREATE TABLE IF NOT EXISTS citizens (
-            ord INTEGER,
-            id TEXT,
-            name TEXT,
-            dob TEXT,
-            phone TEXT,
-            status TEXT,
-            notes TEXT,
-            records TEXT
-        );
-        CREATE TABLE IF NOT EXISTS cases (
-            ord INTEGER,
-            id TEXT,
-            title TEXT,
-            pri TEXT,
-            status TEXT,
-            descr TEXT,
-            dt TEXT
-        );
-        CREATE TABLE IF NOT EXISTS warrants (
-            ord INTEGER,
-            id TEXT,
-            cid TEXT,
-            reason TEXT,
-            by_agent TEXT,
-            dt TEXT
-        );
-        CREATE TABLE IF NOT EXISTS graph_nodes (
-            ord INTEGER,
-            id TEXT,
-            name TEXT,
-            nrole TEXT,
-            ntype TEXT,
-            status TEXT,
-            img TEXT,
-            descr TEXT,
-            subs TEXT,
-            x INTEGER,
-            y INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS graph_edges (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            a TEXT,
-            b TEXT
-        );
-    `);
+/* ---------- كلمات المرور والتوكن ---------- */
+const hash = (p, salt) => crypto.scryptSync(p, salt, 64).toString('hex');
+function mkUser(u, p, full, perms) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  return { u, salt, hash: hash(p, salt), full: full ? 1 : 0, perms: (perms || []).filter(x => ALL_PERMS.includes(x)) };
+}
+function check(user, p) {
+  const a = Buffer.from(hash(p, user.salt), 'hex'), b = Buffer.from(user.hash, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-const app = express(), COOKIE = 'mdt_sid';
-const w = f => (q, s, n) => f(q, s, n).catch(n);
-if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
-app.disable('x-powered-by');
+/* ---------- التخزين ---------- */
+function defaultState() {
+  return {
+    org: 'مركز العمليات الميدانية', threat: 2, note: 'القطاع يعمل. مراقبة النشاط في المناطق الثلاث مستمرة.', logo: '', map: '',
+    people: [], sched: [], pins: [],
+    ranks: [['Director', 'المدير', 10, '#d4162c'], ['Deputy Director', 'نائب المدير', 9, '#e0a82e'], ['Special Agent in Charge', 'العميل الخاص المسؤول', 7, '#3b82f6'],
+      ['Senior Special Agent', 'عميل خاص أول', 5, '#22a45d'], ['Special Agent', 'عميل خاص', 3, '#9aa0ae'], ['Cadet', 'متدرب', 1, '#6b7280']].map(r => ({ en: r[0], ar: r[1], l: r[2], c: r[3] })),
+    rec: { suspects: [], legal: [], operations: [], classified: [],
+      evidence: [{ t: 'فوارغ طلقات - الموقع الأول', d: 'تم العثور على فوارغ رصاص في مكان الحادث.', tag: 'سري', st: 'مفتوح' }],
+      circulars: [{ t: 'التوجيه 01-2026', d: 'يجب على جميع الموظفين تسجيل الحضور في بداية نوبتهم.', tag: 'داخلي', st: 'نشط' }] }
+  };
+}
+let db = null;
+try { db = JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch {}
+function persist() {
+  fs.mkdirSync(path.dirname(DATA), { recursive: true });
+  const t = DATA + '.tmp';
+  fs.writeFileSync(t, JSON.stringify(db));
+  fs.renameSync(t, DATA);
+}
+if (!db) {
+  db = { secret: crypto.randomBytes(32).toString('hex'), users: [], msgs: [], state: defaultState() };
+  const pass = process.env.ADMIN_PASS || crypto.randomBytes(9).toString('base64url');
+  db.users.push(mkUser('admin', pass, 1, []));
+  persist();
+  console.log('\n=== أول تشغيل ===\nالمستخدم: admin\nكلمة المرور: ' + pass + '\nغيّرها فور الدخول من صفحة الإدارة.\n');
+}
 
-app.use((q, s, n) => {
-    s.setHeader('X-Content-Type-Options', 'nosniff');
-    s.setHeader('X-Frame-Options', 'DENY');
-    s.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src * data:; connect-src 'self'");
-    n();
-});
-app.use('/api', (q, s, n) => { s.setHeader('Cache-Control', 'no-store'); n(); });
-app.use(express.json({ limit: '2mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+const sign = s => crypto.createHmac('sha256', db.secret).update(s).digest('base64url');
+const mkToken = u => { const b = Buffer.from(JSON.stringify({ u, exp: Date.now() + TTL })).toString('base64url'); return b + '.' + sign(b); };
+function readToken(t) {
+  if (!t) return null;
+  const [b, s] = t.split('.');
+  if (!b || !s) return null;
+  const e = sign(b);
+  if (s.length !== e.length || !crypto.timingSafeEqual(Buffer.from(s), Buffer.from(e))) return null;
+  try { const p = JSON.parse(Buffer.from(b, 'base64url')); return p.exp > Date.now() ? p.u : null; } catch { return null; }
+}
+const cookie = (req, n) => ((req.headers.cookie || '').split(/;\s*/).find(c => c.startsWith(n + '=')) || '').slice(n.length + 1);
+const pub = u => ({ u: u.u, full: u.full, perms: u.perms });
 
-const str = (x, n) => String(x ?? '').slice(0, n);
-const arr = x => (Array.isArray(x) ? x : []);
-const J = v => { try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch (e) { return []; } };
-const okU = u => /^[a-z0-9_.-]{2,32}$/.test(u);
-const okP = p => typeof p === 'string' && p.length >= 6 && p.length <= 100;
-
+/* ---------- تحديد محاولات الدخول ---------- */
 const tries = new Map();
-function limited(q) {
-    const now = Date.now(), e = tries.get(q.ip) || { n: 0, t: now };
-    if (now - e.t > 6e5) { e.n = 0; e.t = now; }
-    e.n++; tries.set(q.ip, e);
-    return e.n > 10;
-}
+const limited = ip => { const t = tries.get(ip); return t && t.n >= 8 && Date.now() - t.t < 600000; };
+const fail = ip => { const t = tries.get(ip); tries.set(ip, t && Date.now() - t.t < 600000 ? { n: t.n + 1, t: t.t } : { n: 1, t: Date.now() }); };
 
-const cookie = q => { const m = (q.headers.cookie || '').match(/(?:^|;\s*)mdt_sid=([a-f0-9]{64})/); return m && m[1]; };
-
-async function startSession(res, id) {
-    const t = crypto.randomBytes(32).toString('hex');
-    await db.run('INSERT INTO sessions (token, agent_id, expires) VALUES (?, ?, datetime("now", "+7 days"))', [t, id]);
-    res.setHeader('Set-Cookie', `${COOKIE}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${process.env.COOKIE_SECURE === '1' ? '; Secure' : ''}`);
-}
-
-async function getUser(q) {
-    const t = cookie(q); if (!t) return null;
-    const r = await db.get(`
-        SELECT a.id, a.username AS u, a.role 
-        FROM sessions s 
-        JOIN agents a ON a.id = s.agent_id 
-        WHERE s.token = ? AND s.expires > datetime('now')
-    `, [t]);
-    return r || null;
-}
-
-const need = w(async (q, s, n) => {
-    const u = await getUser(q);
-    if (!u) return s.status(401).json({ error: 'unauthorized' });
-    q.user = u; n();
+/* ---------- التطبيق ---------- */
+const app = express();
+if (process.env.TRUST_PROXY) app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use(express.json({ limit: '8mb' }));
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'");
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  if (req.method !== 'GET' && req.headers.origin) {
+    try { if (new URL(req.headers.origin).host !== req.headers.host) return res.status(403).json({ error: 'forbidden' }); }
+    catch { return res.status(403).json({ error: 'forbidden' }); }
+  }
+  next();
 });
-const admin = (q, s, n) => (q.user.role === 'admin' ? n() : s.status(403).json({ error: 'forbidden' }));
 
-/* ---------- auth ---------- */
-app.get('/api/me', w(async (q, s) => {
-    const u = await getUser(q);
-    const c = await db.get('SELECT COUNT(*) AS n FROM agents');
-    s.json({ user: u ? { u: u.u, role: u.role } : null, needsSetup: c.n === 0 });
-}));
+const auth = (req, res, next) => {
+  const u = db.users.find(x => x.u === readToken(cookie(req, 'fh')));
+  if (!u) return res.status(401).json({ error: 'سجّل الدخول أولاً' });
+  req.user = u; next();
+};
+const adminOnly = (req, res, next) => req.user.full ? next() : res.status(403).json({ error: 'للمسؤولين فقط' });
+const has = (u, p) => u.full || u.perms.includes(p);
 
-app.post('/api/setup', w(async (q, s) => {
-    if (limited(q)) return s.status(429).json({ error: 'rate' });
-    const c = await db.get('SELECT COUNT(*) AS n FROM agents');
-    if (c.n > 0) return s.status(403).json({ error: 'already set up' });
-    const u = str(q.body.u, 32).toLowerCase(), p = q.body.p;
-    if (!okU(u) || !okP(p)) return s.status(400).json({ error: 'invalid' });
-    const res = await db.run('INSERT INTO agents (username, pass_hash, role) VALUES (?, ?, ?)', [u, await bcrypt.hash(p, 10), 'admin']);
-    await startSession(s, res.lastID);
-    s.json({ user: { u, role: 'admin' } });
-}));
+app.get('/api/public', (req, res) => res.json({ org: db.state.org, logo: db.state.logo }));
 
-app.post('/api/login', w(async (q, s) => {
-    if (limited(q)) return s.status(429).json({ error: 'rate' });
-    const u = str(q.body.u, 32).toLowerCase(), p = str(q.body.p, 100);
-    const a = await db.get('SELECT id, pass_hash, role FROM agents WHERE username = ?', [u]);
-    if (!a || !(await bcrypt.compare(p, a.pass_hash))) return s.status(401).json({ error: 'bad credentials' });
-    await startSession(s, a.id);
-    s.json({ user: { u, role: a.role } });
-}));
-
-app.post('/api/logout', w(async (q, s) => {
-    const t = cookie(q);
-    if (t) await db.run('DELETE FROM sessions WHERE token = ?', [t]);
-    s.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
-    s.json({ ok: 1 });
-}));
-
-/* ---------- agents ---------- */
-app.get('/api/agents', need, admin, w(async (q, s) => {
-    const r = await db.all('SELECT username AS u, role FROM agents ORDER BY id');
-    s.json({ agents: r });
-}));
-app.post('/api/agents', need, admin, w(async (q, s) => {
-    const u = str(q.body.u, 32).toLowerCase(), p = q.body.p, role = q.body.role === 'admin' ? 'admin' : 'agent';
-    if (!okU(u) || !okP(p)) return s.status(400).json({ error: 'invalid' });
-    try {
-        await db.run('INSERT INTO agents (username, pass_hash, role) VALUES (?, ?, ?)', [u, await bcrypt.hash(p, 10), role]);
-    } catch (e) {
-        if (e.message.includes('UNIQUE')) return s.status(409).json({ error: 'exists' });
-        throw e;
-    }
-    s.json({ ok: 1 });
-}));
-app.delete('/api/agents/:u', need, admin, w(async (q, s) => {
-    const u = String(q.params.u).toLowerCase();
-    if (u === q.user.u) return s.status(400).json({ error: 'cannot delete yourself' });
-    await db.run('DELETE FROM agents WHERE username = ?', [u]);
-    s.json({ ok: 1 });
-}));
-
-/* ---------- data ---------- */
-app.get('/api/version', need, w(async (q, s) => {
-    const m = await db.get('SELECT version FROM meta WHERE id = 1');
-    s.json({ version: Number(m.version) });
-}));
-
-app.get('/api/data', need, w(async (q, s) => {
-    const m = await db.get('SELECT version FROM meta WHERE id = 1');
-    const ci = await db.all('SELECT * FROM citizens ORDER BY ord');
-    const ca = await db.all('SELECT * FROM cases ORDER BY ord');
-    const wa = await db.all('SELECT * FROM warrants ORDER BY ord');
-    const no = await db.all('SELECT * FROM graph_nodes ORDER BY ord');
-    const ed = await db.all('SELECT a, b FROM graph_edges ORDER BY id');
-    const v = Number(m.version);
-    s.json({
-        version: v, fresh: v === 0,
-        citizens: ci.map(x => ({ id: x.id, name: x.name, dob: x.dob, phone: x.phone, status: x.status, notes: x.notes || '', records: J(x.records) })),
-        cases: ca.map(x => ({ id: x.id, title: x.title, pri: x.pri, status: x.status, desc: x.descr || '', date: x.dt })),
-        warrants: wa.map(x => ({ id: x.id, cid: x.cid, reason: x.reason, by: x.by_agent, date: x.dt })),
-        graph: {
-            nodes: no.map(x => ({ id: x.id, name: x.name, role: x.nrole || '', type: x.ntype, status: x.status, img: x.img || '', desc: x.descr || '', subs: J(x.subs), x: x.x, y: x.y })),
-            edges: ed.map(x => ({ a: x.a, b: x.b }))
-        }
-    });
-}));
-
-app.put('/api/data', need, w(async (q, s) => {
-    const b = q.body || {};
-    await db.exec('BEGIN TRANSACTION;');
-    try {
-        await db.exec('DELETE FROM warrants; DELETE FROM citizens; DELETE FROM cases; DELETE FROM graph_edges; DELETE FROM graph_nodes;');
-
-        const citizens = arr(b.citizens).slice(0, 5000);
-        for (let i = 0; i < citizens.length; i++) {
-            let x = citizens[i];
-            await db.run('INSERT INTO citizens (ord, id, name, dob, phone, status, notes, records) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [i, str(x.id, 40), str(x.name, 120), str(x.dob, 20), str(x.phone, 40), str(x.status, 20), str(x.notes, 5000), JSON.stringify(arr(x.records).map(r => str(r, 500)))]);
-        }
-
-        const cases = arr(b.cases).slice(0, 5000);
-        for (let i = 0; i < cases.length; i++) {
-            let x = cases[i];
-            await db.run('INSERT INTO cases (ord, id, title, pri, status, descr, dt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [i, str(x.id, 40), str(x.title, 200), str(x.pri, 10), str(x.status, 10), str(x.desc, 5000), str(x.date, 20)]);
-        }
-
-        const warrants = arr(b.warrants).slice(0, 5000);
-        for (let i = 0; i < warrants.length; i++) {
-            let x = warrants[i];
-            await db.run('INSERT INTO warrants (ord, id, cid, reason, by_agent, dt) VALUES (?, ?, ?, ?, ?, ?)',
-                [i, str(x.id, 40), str(x.cid, 40), str(x.reason, 2000), str(x.by, 60), str(x.date, 20)]);
-        }
-
-        const nodes = arr(b.graph && b.graph.nodes).slice(0, 2000);
-        for (let i = 0; i < nodes.length; i++) {
-            let x = nodes[i];
-            await db.run('INSERT INTO graph_nodes (ord, id, name, nrole, ntype, status, img, descr, subs, x, y) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [i, str(x.id, 40), str(x.name, 120), str(x.role, 120), str(x.type, 20), str(x.status, 20), str(x.img, 500), str(x.desc, 5000), JSON.stringify(arr(x.subs).map(t => str(t, 120))), Math.round(Number(x.x)) || 0, Math.round(Number(x.y)) || 0]);
-        }
-
-        const nodeIds = new Set(nodes.map(x => str(x.id, 40)));
-        const edges = arr(b.graph && b.graph.edges).filter(e => nodeIds.has(str(e.a, 40)) && nodeIds.has(str(e.b, 40))).slice(0, 10000);
-        for (let e of edges) {
-            await db.run('INSERT INTO graph_edges (a, b) VALUES (?, ?)', [str(e.a, 40), str(e.b, 40)]);
-        }
-
-        await db.run('UPDATE meta SET version = version + 1 WHERE id = 1');
-        const m = await db.get('SELECT version FROM meta WHERE id = 1');
-        await db.exec('COMMIT;');
-        s.json({ version: Number(m.version) });
-    } catch (e) {
-        await db.exec('ROLLBACK;');
-        throw e;
-    }
-}));
-
-app.use((e, q, s, n) => { console.error(e); s.status(500).json({ error: 'server error' }); });
-
-setInterval(() => db.run('DELETE FROM sessions WHERE expires < datetime("now")').catch(() => {}), 36e5);
-
-initDb().then(() => {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log('FBI MDT running with SQLite on port ' + PORT));
+app.post('/api/login', (req, res) => {
+  const ip = req.ip;
+  if (limited(ip)) return res.status(429).json({ error: 'محاولات كثيرة، حاول بعد قليل' });
+  const { u, p } = req.body || {};
+  const user = typeof u === 'string' && db.users.find(x => x.u === u);
+  const ok = user ? check(user, String(p ?? '')) : (hash('x', '00'), false);
+  if (!ok) { fail(ip); return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
+  tries.delete(ip);
+  res.setHeader('Set-Cookie', `fh=${mkToken(user.u)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${TTL / 1000}${req.secure ? '; Secure' : ''}`);
+  res.json(pub(user));
 });
+app.post('/api/logout', (req, res) => { res.setHeader('Set-Cookie', 'fh=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true }); });
+app.get('/api/me', auth, (req, res) => res.json(pub(req.user)));
+
+/* ---------- البيانات ---------- */
+app.get('/api/state', auth, (req, res) => {
+  const u = req.user, st = db.state;
+  const out = { org: st.org, threat: st.threat, note: st.note, logo: st.logo, map: st.map, rec: {} };
+  if (has(u, 'roster')) out.people = st.people;
+  if (has(u, 'schedule')) out.sched = st.sched;
+  if (has(u, 'ranks') || has(u, 'roster')) out.ranks = st.ranks;
+  if (has(u, 'radar')) out.pins = st.pins;
+  REC_KEYS.forEach(k => { if (has(u, k)) out.rec[k] = st.rec[k]; });
+  res.json({ state: out, msgs: has(u, 'comms') ? db.msgs.slice(-200) : [] });
+});
+
+const S_ = (v, n) => String(v ?? '').slice(0, n);
+const N = v => Number.isFinite(+v) ? +v : 0;
+const arr = a => a.filter(x => x && typeof x === 'object');
+const san = {
+  people: a => arr(a).map(p => ({ n: S_(p.n, 100), b: N(p.b), r: S_(p.r, 100), s: S_(p.s, 20), o: S_(p.o, 300) })),
+  sched: a => arr(a).map(e => ({ d: S_(e.d, 20), f: S_(e.f, 10), e: S_(e.e, 10), x: S_(e.x, 200), a: S_(e.a, 100) })),
+  ranks: a => arr(a).map(r => ({ en: S_(r.en, 100), ar: S_(r.ar, 100), l: N(r.l), c: /^#[0-9a-f]{6}$/i.test(r.c) ? r.c : '#888888' })),
+  pins: a => arr(a).map(p => ({ n: S_(p.n, 100), x: N(p.x), y: N(p.y) })),
+  rec: a => arr(a).map(r => ({ t: S_(r.t, 200), d: S_(r.d, 2000), tag: S_(r.tag, 30), st: S_(r.st, 30) }))
+};
+const imgOk = v => v === '' || (typeof v === 'string' && v.length < 3e6 && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v));
+
+app.put('/api/state', auth, (req, res) => {
+  const u = req.user, st = db.state, rejected = [];
+  for (const [k, v] of Object.entries(req.body || {})) {
+    let ok = false;
+    if (k === 'threat') { if (has(u, 'sector') && Number.isInteger(v) && v >= 0 && v <= 4) { st.threat = v; ok = true; } }
+    else if (k === 'note') { if (has(u, 'sector') && typeof v === 'string') { st.note = v.slice(0, 1000); ok = true; } }
+    else if (k === 'org') { if (u.full && typeof v === 'string' && v.trim()) { st.org = v.slice(0, 80); ok = true; } }
+    else if (k === 'logo' || k === 'map') { if (u.full && imgOk(v)) { st[k] = v; ok = true; } }
+    else if (k.startsWith('rec.')) {
+      const r = k.slice(4);
+      if (REC_KEYS.includes(r) && has(u, r) && Array.isArray(v) && v.length <= 2000) { st.rec[r] = san.rec(v); ok = true; }
+    } else if (san[k] && SEC[k] && Array.isArray(v) && v.length <= 2000 && has(u, SEC[k])) { st[k] = san[k](v); ok = true; }
+    if (!ok) rejected.push(k);
+  }
+  persist();
+  res.json({ ok: true, rejected });
+});
+
+/* ---------- الرسائل ---------- */
+app.get('/api/msgs', auth, (req, res) => res.json(has(req.user, 'comms') ? db.msgs.slice(-200) : []));
+app.post('/api/msgs', auth, (req, res) => {
+  if (!has(req.user, 'comms')) return res.status(403).json({ error: 'لا تملك الصلاحية' });
+  const x = S_(req.body?.x, 1000).trim();
+  if (!x) return res.status(400).json({ error: 'رسالة فارغة' });
+  db.msgs.push({ u: req.user.u, c: S_(req.body?.c, 30), x, t: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ_NAME || 'Asia/Riyadh' }) });
+  if (db.msgs.length > 500) db.msgs = db.msgs.slice(-500);
+  persist();
+  res.json({ ok: true });
+});
+
+/* ---------- الحسابات (للمسؤول) ---------- */
+const NAME_RE = /^[\w.\-\u0600-\u06FF]{2,32}$/;
+app.get('/api/users', auth, adminOnly, (req, res) => res.json(db.users.map(pub)));
+app.post('/api/users', auth, adminOnly, (req, res) => {
+  const { u, p, full, perms } = req.body || {};
+  if (typeof u !== 'string' || !NAME_RE.test(u)) return res.status(400).json({ error: 'اسم المستخدم غير صالح (2–32 حرفاً بدون مسافات)' });
+  if (typeof p !== 'string' || p.length < 6 || p.length > 200) return res.status(400).json({ error: 'كلمة المرور 6 أحرف على الأقل' });
+  if (db.users.some(x => x.u === u)) return res.status(409).json({ error: 'اسم المستخدم مستخدم مسبقاً' });
+  db.users.push(mkUser(u, p, full, Array.isArray(perms) ? perms : []));
+  persist(); res.json({ ok: true });
+});
+app.patch('/api/users/:u', auth, adminOnly, (req, res) => {
+  const t = db.users.find(x => x.u === req.params.u);
+  if (!t) return res.status(404).json({ error: 'الحساب غير موجود' });
+  const { full, perms, p } = req.body || {};
+  if (full !== undefined) {
+    if (t.u === req.user.u) return res.status(400).json({ error: 'لا يمكنك تغيير صلاحية حسابك' });
+    t.full = full ? 1 : 0;
+  }
+  if (Array.isArray(perms)) t.perms = perms.filter(x => ALL_PERMS.includes(x));
+  if (p !== undefined) {
+    if (typeof p !== 'string' || p.length < 6 || p.length > 200) return res.status(400).json({ error: 'كلمة المرور 6 أحرف على الأقل' });
+    t.salt = crypto.randomBytes(16).toString('hex'); t.hash = hash(p, t.salt);
+  }
+  persist(); res.json({ ok: true });
+});
+app.delete('/api/users/:u', auth, adminOnly, (req, res) => {
+  if (req.params.u === req.user.u) return res.status(400).json({ error: 'لا يمكنك حذف حسابك' });
+  const i = db.users.findIndex(x => x.u === req.params.u);
+  if (i < 0) return res.status(404).json({ error: 'الحساب غير موجود' });
+  db.users.splice(i, 1); persist(); res.json({ ok: true });
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use((err, req, res, next) => res.status(400).json({ error: 'طلب غير صالح' }));
+app.listen(PORT, () => console.log('الخادم يعمل على المنفذ ' + PORT));
