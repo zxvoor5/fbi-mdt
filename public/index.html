@@ -58,19 +58,45 @@ main{flex:1;padding:28px;min-width:0}
 .rad{display:grid;grid-template-columns:minmax(260px,420px) 1fr;gap:20px}
 @media(max-width:860px){.shell{flex-direction:column}aside{width:auto;height:auto;position:static}nav{display:flex;overflow-x:auto}nav a{white-space:nowrap}.dg,.rad,.cm{grid-template-columns:1fr}main{padding:16px}.tiles{grid-template-columns:repeat(2,1fr)}.st{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){animateTransform{display:none}}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;background:repeating-linear-gradient(0deg,#0000 0 2px,#00000030 2px 3px);opacity:.45}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:59;background:radial-gradient(ellipse at center,#0000 55%,#000d 100%)}
+.mono,.bc,.strip,.tag{font-family:'Courier New',ui-monospace,monospace;letter-spacing:.04em}
+.strip{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--rd2);border-bottom:1px dashed #5a1a22;padding-bottom:8px;margin-bottom:16px;opacity:.85}
+.stamp{transform:rotate(-4deg);border:2px solid var(--rd);padding:0 10px;font-weight:700;color:var(--rd);display:inline-block}
+.red{background:#000;color:transparent;border-radius:2px;user-select:none;transition:.25s;cursor:help}.red:hover,.red:focus{background:transparent;color:var(--mu)}
+.bd{position:relative;height:68vh;overflow:hidden;cursor:grab;touch-action:none;border:1px solid var(--bd);background:radial-gradient(#ffffff10 1px,transparent 1px) 0 0/24px 24px,#0b0a0c;box-shadow:inset 0 0 60px #000}
+.bc2{position:relative;width:1700px;height:960px;transform-origin:0 0}.bc2 svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}.bd.pan{cursor:grabbing}
+.bn{position:absolute;width:150px;min-height:84px;background:#17130f;border:1px solid #3a3226;border-top:3px solid;padding:12px 10px 8px;cursor:grab;touch-action:none;user-select:none;box-shadow:0 6px 14px #000a;transform:rotate(var(--r,0deg))}
+.bn.sel{outline:2px solid var(--rd2)}.bn i{position:absolute;top:-8px;left:69px;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff7a88,#a00f20);box-shadow:0 2px 4px #000}
+.bn small{display:block;font-size:10px;color:var(--mu)}.bn b{display:block;line-height:1.3}.bn span{display:block;font-size:12px;color:var(--mu);overflow:hidden;max-height:36px}
+.bh{color:var(--mu);font-size:12px;margin-top:8px}
+.vh{height:180px;background:#0a0b10;display:grid;place-items:center;font-size:48px;color:var(--rd);overflow:hidden}.vh img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+.vt{display:flex;gap:6px;padding:8px 14px 0}.vt img{width:52px;height:40px;object-fit:cover;border:1px solid var(--bd);border-radius:3px;cursor:zoom-in}.vt img:hover{border-color:var(--rd2)}
+.plate{display:inline-block;background:#f1efe4;color:#111;border:2px solid #111;border-radius:5px;padding:1px 14px;font:700 18px/1.5 'Courier New',ui-monospace,monospace;letter-spacing:.14em;unicode-bidi:plaintext;box-shadow:0 0 0 1px #0008}
+.vs{margin-bottom:14px;max-width:360px;width:100%}
+.vp{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.vp div{position:relative}.vp img{width:76px;height:58px;object-fit:cover;border:1px solid var(--bd);border-radius:3px;display:block}.vp button{position:absolute;top:-6px;inset-inline-start:-6px;width:20px;height:20px;border-radius:50%;border:0;background:var(--rd);cursor:pointer;line-height:1;padding:0}
+.lb{cursor:zoom-out}.lb img{max-width:100%;max-height:92vh;border:1px solid var(--bd)}
+.pw{position:relative;margin-top:10px}.lc .pw input{margin-top:0;padding-inline-end:40px}.pw .ib{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%)}
+#fx{position:fixed;inset:0;z-index:100;background:#07080b;display:grid;transition:opacity .35s}#fx.out{opacity:0}
+#fx canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.35}
+#fx pre{position:relative;margin:0;padding:max(24px,env(safe-area-inset-top,0px)) 24px 24px;color:var(--rd2);font:14px/1.7 'Courier New',ui-monospace,monospace;overflow:hidden;align-self:start;max-height:100%;text-shadow:0 0 8px #d4162c}
+.fxs{position:absolute;bottom:max(16px,env(safe-area-inset-bottom,0px));inset-inline:0;text-align:center;color:var(--mu);font-size:12px}
+.cw{color:#e0a82e;font-size:12px;margin-top:6px}.b:disabled{opacity:.6;cursor:wait}
+.vl{max-width:440px}.vl input{width:100%;margin-bottom:8px}.vl .b{width:100%;margin-top:6px}
+.cr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--bd)}.cr small{color:var(--mu);flex:none;min-width:78px}.cr span{flex:1;min-width:0;overflow-wrap:anywhere;direction:ltr;text-align:start;font-family:'Courier New',ui-monospace,monospace}
 </style></head><body><div id="app"></div>
 <script>
 const KEY='field_hub_v1',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let S=null;
-S=S||{org:'مركز العمليات الميدانية',users:[],threat:2,note:'القطاع يعمل. مراقبة النشاط في المناطق الثلاث مستمرة.',people:[],sched:[],pins:[],msgs:[],
+S=S||{org:'مركز العمليات الميدانية',users:[],board:{nodes:[],links:[]},threat:2,note:'القطاع يعمل. مراقبة النشاط في المناطق الثلاث مستمرة.',people:[],sched:[],pins:[],msgs:[],
 ranks:[['Director','المدير',10,'#d4162c'],['Deputy Director','نائب المدير',9,'#e0a82e'],['Special Agent in Charge','العميل الخاص المسؤول',7,'#3b82f6'],['Senior Special Agent','عميل خاص أول',5,'#22a45d'],['Special Agent','عميل خاص',3,'#9aa0ae'],['Cadet','متدرب',1,'#6b7280']].map(r=>({en:r[0],ar:r[1],l:r[2],c:r[3]})),
-rec:{suspects:[],legal:[],operations:[],classified:[],evidence:[{t:'فوارغ طلقات - الموقع الأول',d:'تم العثور على فوارغ رصاص في مكان الحادث.',tag:'سري',st:'مفتوح'}],circulars:[{t:'التوجيه 01-2026',d:'يجب على جميع الموظفين تسجيل الحضور في بداية نوبتهم.',tag:'داخلي',st:'نشط'}]}};
+rec:{suspects:[],legal:[],operations:[],classified:[],vehicles:[],vault:[],evidence:[{t:'فوارغ طلقات - الموقع الأول',d:'تم العثور على فوارغ رصاص في مكان الحادث.',tag:'سري',st:'مفتوح'}],circulars:[{t:'التوجيه 01-2026',d:'يجب على جميع الموظفين تسجيل الحضور في بداية نوبتهم.',tag:'داخلي',st:'نشط'}]}};
 const save=()=>queueSync();
 let me=null,ME=null;
 let page='dashboard',ch='جميع القنوات';
-const REC={suspects:['المشتبه بهم','☹'],evidence:['دليل','✦'],legal:['الشؤون القانونية','⚖'],operations:['العمليات','◎'],circulars:['التعاميم الرسمية','☰'],classified:['ملفات مصنفة','🔒']};
-const P=[['dashboard','مركز القيادة','▦'],['roster','قائمة الحضور','☺'],['schedule','جدول','▤'],['ranks','التسلسل الهرمي للرتب','★'],['suspects',...REC.suspects],['evidence',...REC.evidence],['legal',...REC.legal],['operations',...REC.operations],['circulars',...REC.circulars],['classified',...REC.classified],['radar','رادار','◉'],['comms','مركز الاتصالات','☏'],['admin','الإدارة','⚙']];
+const REC={suspects:['المشتبه بهم','☹'],evidence:['دليل','✦'],legal:['الشؤون القانونية','⚖'],operations:['العمليات','◎'],circulars:['التعاميم الرسمية','☰'],classified:['ملفات مصنفة','🔒'],vehicles:['المركبات','🚗'],vault:['بيانات الدخول','🔑']};
+const P=[['dashboard','مركز القيادة','▦'],['roster','قائمة الحضور','☺'],['schedule','جدول','▤'],['ranks','التسلسل الهرمي للرتب','★'],['suspects',...REC.suspects],['evidence',...REC.evidence],['vehicles',...REC.vehicles],['legal',...REC.legal],['operations',...REC.operations],['circulars',...REC.circulars],['classified',...REC.classified],['vault',...REC.vault],['board','شبكة التحقيق','⌬'],['radar','رادار','◉'],['comms','مركز الاتصالات','☏'],['admin','الإدارة','⚙']];
 const U=()=>ME;
 const can=id=>{const u=U();return u&&(id=='dashboard'||u.full||(id!='admin'&&u.perms.includes(id)))};
 const emblem='<svg viewBox="0 0 40 40" width="40" height="40"><path d="M20 2l15 5v11c0 9-6 16-15 20C11 34 5 27 5 18V7z" fill="none" stroke="#d4162c" stroke-width="2"/><path d="M20 11l2.6 5.4 5.9.8-4.3 4.1 1 5.9L20 24.4l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="#d4162c"/></svg>';
@@ -85,20 +111,89 @@ m.innerHTML=`<div class="md"><h3 style="margin:0">${title}</h3>${fields.map(f=>`
 document.body.appendChild(m);m.querySelector('#no').onclick=()=>m.remove();
 m.querySelector('#ok').onclick=()=>{const v={};m.querySelectorAll('[name]').forEach(e=>v[e.name]=e.value.trim());m.remove();cb(v)}}
 function render(){const app=$('#app');
-if(!U()){app.innerHTML=`<div class="login"><span class="g" style="position:fixed;top:16px;left:16px;font-size:12px;padding:2px 10px">العربية</span><div class="lc">${em()}<h2 style="margin:10px 0 2px">${esc(S.org)}</h2><p style="color:var(--mu);margin:0 0 14px">دخول مقيّد للموظفين المصرح لهم فقط</p><input id="lu" placeholder="اسم المستخدم" autocomplete="username"><input id="lp" type="password" placeholder="كلمة المرور" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()"><div class="err" id="le"></div><button class="b" onclick="login()">تسجيل الدخول</button></div></div>`;return}
+if(!U()){app.innerHTML=`<div class="login"><span class="g" style="position:fixed;top:16px;left:16px;font-size:12px;padding:2px 10px">العربية</span><div class="lc">${em()}<h2 style="margin:10px 0 2px">${esc(S.org)}</h2><p style="color:var(--mu);margin:0 0 8px">دخول مقيّد للموظفين المصرح لهم فقط</p><p class="mono" style="font-size:10px;color:var(--rd2);margin:0 0 12px">RESTRICTED ACCESS · ALL ACTIVITY IS LOGGED</p><input id="lu" placeholder="اسم المستخدم" autocomplete="username" autocapitalize="off" spellcheck="false" onkeydown="if(event.key=='Enter')$('#lp').focus()"><div class="pw"><input id="lp" type="password" placeholder="كلمة المرور" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()" onkeyup="capsChk(event)"><button type="button" class="ib" id="lt" aria-label="إظهار كلمة المرور" title="إظهار كلمة المرور" onclick="togglePw()">👁</button></div><div class="cw" id="lw"></div><div class="err" id="le"></div><button class="b" id="lb" onclick="login()">تسجيل الدخول</button></div></div>`;setTimeout(()=>{const u=$('#lu');if(u)u.focus()},0);return}
 if(!can(page))page='dashboard';
-const V={dashboard:dash,roster,schedule:sched,ranks,radar,comms,admin}[page];
-app.innerHTML=`<div class="shell"><aside><div class="brand">${em()}<div><b>${esc(S.org)}</b><small>● عبر الإنترنت</small></div></div><nav>${P.filter(p=>can(p[0])).map(p=>`<a class="${p[0]==page?'on':''}" onclick="go('${p[0]}')"><span>${p[2]}</span>${p[1]}</a>`).join('')}</nav><div class="foot"><span>${esc(me)} · المشرف</span><button class="g" onclick="logout()">تسجيل الخروج</button></div></aside><main>${V?V():recView(page)}</main></div>`;
+const V={dashboard:dash,roster,schedule:sched,ranks,radar,board,comms,admin,vehicles:vehView,vault:vaultView}[page];
+app.innerHTML=`<div class="shell"><aside><div class="brand">${em()}<div><b>${esc(S.org)}</b><small>● عبر الإنترنت</small></div></div><nav>${P.filter(p=>can(p[0])).map(p=>`<a class="${p[0]==page?'on':''}" onclick="go('${p[0]}')"><span>${p[2]}</span>${p[1]}</a>`).join('')}</nav><div class="foot"><span>${esc(me)} · المشرف</span><button class="g" onclick="logout()">تسجيل الخروج</button></div></aside><main><div class="strip"><span>● سري — للاستخدام الداخلي فقط</span><span id="clk" dir="ltr"></span></div>${V?V():recView(page)}</main></div>`;
 if(page=='radar')$('#rsv').onclick=pinClick}
 /* dashboard */
 const LV=['منخفض','متوسط','مرتفع','حرج','طوارئ'];
 function dash(){const ops=S.rec.operations.filter(o=>o.st=='نشط').length,ag=S.people.filter(p=>p.s=='حاضر').length;
-return hd('مركز القيادة','∿','<button class="g" onclick="editSector()">تحرير</button>')+`<div class="dg"><div><div class="panel"><b>حالة القطاع</b><div class="st"><div><small>مستوى التهديد</small><b style="color:var(--rd2)">${LV[S.threat]}</b></div><div><small>العمليات النشطة</small><b>${ops}</b></div><div><small>وكلاء في الخدمة</small><b>${ag}</b></div></div><div class="bar">${[0,1,2,3,4].map(i=>`<i class="${i<=S.threat?'f':''}"></i>`).join('')}</div><div style="color:var(--mu)">${esc(S.note)}</div></div><div class="tiles">${['suspects','evidence','legal','operations','circulars','classified'].filter(can).map(k=>`<a onclick="go('${k}')"><span>${REC[k][1]}</span>${REC[k][0]}</a>`).join('')}</div></div><div class="mapbox">${radarSVG(0)}</div></div>`}
+return hd('مركز القيادة','∿','<button class="g" onclick="editSector()">تحرير</button>')+`<div class="dg"><div><div class="panel"><b>حالة القطاع</b><div class="st"><div><small>مستوى التهديد</small><b style="color:var(--rd2)">${LV[S.threat]}</b></div><div><small>العمليات النشطة</small><b>${ops}</b></div><div><small>وكلاء في الخدمة</small><b>${ag}</b></div></div><div class="bar">${[0,1,2,3,4].map(i=>`<i class="${i<=S.threat?'f':''}"></i>`).join('')}</div><div style="color:var(--mu)">${esc(S.note)}</div></div><div class="tiles">${['suspects','evidence','vehicles','legal','operations','circulars','classified'].filter(can).map(k=>`<a onclick="go('${k}')"><span>${REC[k][1]}</span>${REC[k][0]}</a>`).join('')}</div></div><div class="mapbox">${radarSVG(0)}</div></div>`}
 function editSector(){modal('تحرير حالة القطاع',[{k:'th',l:'مستوى التهديد',o:LV},{k:'n',l:'ملاحظة',ta:1}],{th:LV[S.threat],n:S.note},v=>{S.threat=LV.indexOf(v.th);S.note=v.n;save();render()})}
 /* records */
-function recView(k){const L=S.rec[k];return hd(REC[k][0],REC[k][1],`<button class="b" onclick="recForm('${k}')">+ إضافة</button>`)+(L.length?`<div class="cards">${L.map((r,i)=>`<div class="card"><div class="ph">${REC[k][1]}</div><div class="cb"><div class="rw"><span class="tag">${esc(r.tag)}</span><small style="color:var(--mu)">${esc(r.st)}</small></div><h3>${esc(r.t)}</h3><p>${esc(r.d)}</p><div class="act"><button class="ib" title="تعديل" onclick="recForm('${k}',${i})">✎</button><button class="ib" title="حذف" onclick="if(confirm('حذف هذا الإدخال؟'))del2('${k}',${i})">🗑</button></div></div></div>`).join('')}</div>`:'<div class="empty">لا توجد إدخالات حتى الآن. اضغط «إضافة» لبدء السجل.</div>')}
+function recView(k){const L=S.rec[k];return hd(REC[k][0],REC[k][1],`<button class="b" onclick="recForm('${k}')">+ إضافة</button>`)+(L.length?`<div class="cards">${L.map((r,i)=>`<div class="card"><div class="ph">${REC[k][1]}</div><div class="cb"><div class="rw"><span class="tag ${r.tag=='سري'?'stamp':''}">${esc(r.tag)}</span><small class="mono" style="color:var(--mu)">${k.slice(0,3).toUpperCase()}-${String(i+1).padStart(3,'0')} · ${esc(r.st)}</small></div><h3>${esc(r.t)}</h3><p class="${r.tag=='سري'?'red':''}" ${r.tag=='سري'?'tabindex="0"':''}>${esc(r.d)}</p><div class="act"><button class="ib" title="تعديل" onclick="recForm('${k}',${i})">✎</button><button class="ib" title="حذف" onclick="if(confirm('حذف هذا الإدخال؟'))del2('${k}',${i})">🗑</button></div></div></div>`).join('')}</div>`:'<div class="empty">لا توجد إدخالات حتى الآن. اضغط «إضافة» لبدء السجل.</div>')}
 function del2(k,i){S.rec[k].splice(i,1);save();render()}
 function recForm(k,i){const e=i!=null;modal(e?'تعديل الإدخال':'إدخال جديد',[{k:'t',l:'العنوان'},{k:'d',l:'الوصف',ta:1},{k:'tag',l:'التصنيف',o:['سري','داخلي','عام']},{k:'st',l:'الحالة',o:['مفتوح','نشط','مغلق']}],e?S.rec[k][i]:{tag:'داخلي',st:'نشط'},v=>{if(!v.t)return;e?Object.assign(S.rec[k][i],v):S.rec[k].unshift(v);save();render()})}
+/* vehicles */
+let vq='';
+const VMAX=4;
+function vGrid(){
+  const L=S.rec.vehicles.map((v,i)=>[v,i]).filter(([v])=>!vq||[v.pl,v.m,v.o].some(x=>String(x||'').toLowerCase().includes(vq.toLowerCase())));
+  if(!S.rec.vehicles.length)return'<div class="empty">لا توجد مركبات مسجلة. اضغط «إضافة مركبة» لرفع الصور ورقم اللوحة.</div>';
+  if(!L.length)return'<div class="empty">لا توجد نتائج مطابقة للبحث.</div>';
+  return`<div class="cards">${L.map(([v,i])=>{const im=v.imgs||[];return`<div class="card"><div class="vh">${im[0]?`<img src="${esc(im[0])}" alt="" onclick="vShow(${i},0)">`:'🚗'}</div>${im.length>1?`<div class="vt">${im.slice(1).map((s,j)=>`<img src="${esc(s)}" alt="" onclick="vShow(${i},${j+1})">`).join('')}</div>`:''}<div class="cb"><div class="rw"><span class="plate">${esc(v.pl)}</span><small class="mono" style="color:var(--mu)">VEH-${String(i+1).padStart(3,'0')}</small></div><h3>${esc(v.m)||'—'}</h3><p>${esc(v.o)}</p><div class="act"><button class="ib" title="تعديل" onclick="vForm(${i})">✎</button><button class="ib" title="حذف" onclick="if(confirm('حذف هذه المركبة؟'))del2('vehicles',${i})">🗑</button></div></div></div>`}).join('')}</div>`;
+}
+function vehView(){
+  return hd(REC.vehicles[0],REC.vehicles[1],'<button class="b" onclick="vForm()">+ إضافة مركبة</button>')+`<input class="vs" placeholder="بحث برقم اللوحة أو الطراز…" value="${esc(vq)}" oninput="vq=this.value;$('#vg').innerHTML=vGrid()"><div id="vg">${vGrid()}</div>`;
+}
+function shrink(f,max=800){return new Promise((ok,no)=>{const r=new FileReader();r.onerror=no;r.onload=()=>{const im=new Image();im.onerror=no;im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.68))};im.src=r.result};r.readAsDataURL(f)})}
+function vShow(i,j){const m=document.createElement('div');m.className='mo lb';m.innerHTML=`<img src="${esc(S.rec.vehicles[i].imgs[j])}" alt="">`;m.onclick=()=>m.remove();document.body.appendChild(m)}
+function vForm(i){
+  const e=i!=null,v=e?S.rec.vehicles[i]:{pl:'',m:'',o:'',imgs:[]},imgs=[...(v.imgs||[])];
+  const m=document.createElement('div');m.className='mo';
+  const draw=()=>{m.querySelector('#vp').innerHTML=imgs.map((s,j)=>`<div><img src="${esc(s)}" alt=""><button type="button" title="إزالة الصورة" data-j="${j}">×</button></div>`).join('');m.querySelector('#vf').disabled=imgs.length>=VMAX;m.querySelector('#vc').textContent=imgs.length+' / '+VMAX};
+  m.innerHTML=`<div class="md"><h3 style="margin:0">${e?'تعديل المركبة':'مركبة جديدة'}</h3><label>رقم اللوحة</label><input id="vl" dir="auto" value="${esc(v.pl)}" placeholder="مثال: أ ب ج 1234"><label>الطراز / اللون</label><input id="vm" value="${esc(v.m)}" placeholder="مثال: تويوتا كامري - أبيض"><label>ملاحظات</label><textarea id="vo">${esc(v.o)}</textarea><label>الصور <small id="vc"></small></label><input id="vf" type="file" accept="image/*" multiple><div class="vp" id="vp"></div><div class="rw"><button class="b" id="ok">حفظ</button><button class="g" id="no">إلغاء</button></div></div>`;
+  document.body.appendChild(m);draw();
+  m.querySelector('#no').onclick=()=>m.remove();
+  m.querySelector('#vp').onclick=ev=>{const b=ev.target.closest('button');if(b){imgs.splice(+b.dataset.j,1);draw()}};
+  m.querySelector('#vf').onchange=async ev=>{
+    const fs=[...ev.target.files].slice(0,VMAX-imgs.length);ev.target.value='';
+    for(const f of fs){try{imgs.push(await shrink(f))}catch(x){alert('تعذّر قراءة الصورة: '+f.name)}}
+    draw();
+  };
+  m.querySelector('#ok').onclick=()=>{
+    const pl=m.querySelector('#vl').value.trim();
+    if(!pl){alert('أدخل رقم اللوحة');return}
+    const d={pl,m:m.querySelector('#vm').value.trim(),o:m.querySelector('#vo').value.trim(),imgs};
+    m.remove();e?S.rec.vehicles[i]=d:S.rec.vehicles.unshift(d);save();render();
+  };
+}
+/* الخزنة: بيانات الدخول تُشفَّر في المتصفح (AES-GCM) ولا يحفظ الخادم إلا النص المشفّر */
+let vk=null,vd=[],vsalt=null,vlt=0,vshow={};
+const b64=u=>{let s='';new Uint8Array(u).forEach(c=>s+=String.fromCharCode(c));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function vKey(pass,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function vSave(){const iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},vk,new TextEncoder().encode(JSON.stringify(vd)));S.rec.vault=[{s:b64(vsalt),i:b64(iv),c:b64(ct)}];save()}
+async function vCreate(pass){vsalt=crypto.getRandomValues(new Uint8Array(16));vk=await vKey(pass,vsalt);vd=[];await vSave()}
+async function vUnlock(pass){const v=S.rec.vault[0];try{const salt=unb64(v.s),key=await vKey(pass,salt),pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(v.i)},key,unb64(v.c));vd=JSON.parse(new TextDecoder().decode(pt));vk=key;vsalt=salt;return true}catch(e){return false}}
+function vLock(){vk=null;vd=[];vsalt=null;vshow={};clearTimeout(vlt)}
+function vTouch(){clearTimeout(vlt);if(vk)vlt=setTimeout(()=>{vLock();if(page=='vault')render()},120000)}
+['pointerdown','keydown'].forEach(e=>addEventListener(e,vTouch,true));
+async function vOpen(){
+  const p=$('#vpw').value,e=$('#vpe'),first=!S.rec.vault.length;
+  if(!p){e.textContent='أدخل عبارة المرور';return}
+  if(first){if(p.length<8){e.textContent='العبارة قصيرة، استخدم 8 أحرف على الأقل';return}if(p!==$('#vpw2').value){e.textContent='العبارتان غير متطابقتين';return}}
+  const b=$('#vob');b.disabled=true;b.textContent=first?'جارٍ التشفير…':'جارٍ الفتح…';e.textContent='';
+  if(first)await vCreate(p);else if(!await vUnlock(p)){b.disabled=false;b.textContent='فتح';e.textContent='عبارة المرور غير صحيحة';return}
+  vTouch();render();
+}
+function vaultView(){
+  const h=hd(REC.vault[0],REC.vault[1],vk?'<button class="g" onclick="vLock();render()" style="margin-inline-end:8px">🔒 قفل</button><button class="b" onclick="cForm()">+ إضافة</button>':'');
+  if(!(window.crypto&&crypto.subtle))return h+'<div class="empty">المتصفح لا يدعم التشفير في هذا الاتصال. افتح الموقع عبر HTTPS.</div>';
+  if(!vk){const f=!S.rec.vault.length;
+    return h+`<div class="panel vl"><b>${f?'إنشاء الخزنة':'فتح الخزنة'}</b><p style="color:var(--mu);margin:6px 0 12px">${f?'اختر عبارة مرور رئيسية. تُشفَّر البيانات في متصفحك بها، ولا يستطيع الخادم ولا أي مسؤول قراءتها. إذا نسيتها فلا يمكن استرجاع البيانات.':'أدخل عبارة المرور الرئيسية لعرض البيانات. تُقفل الخزنة تلقائياً بعد دقيقتين من عدم النشاط.'}</p><input id="vpw" type="password" autocomplete="${f?'new-password':'off'}" placeholder="عبارة المرور الرئيسية" onkeydown="if(event.key=='Enter')${f?"$('#vpw2').focus()":'vOpen()'}">${f?`<input id="vpw2" type="password" autocomplete="new-password" placeholder="أعد كتابة العبارة" onkeydown="if(event.key=='Enter')vOpen()">`:''}<div class="err" id="vpe"></div><button class="b" id="vob" onclick="vOpen()">${f?'إنشاء الخزنة':'فتح'}</button></div>`}
+  if(!vd.length)return h+'<div class="empty">الخزنة فارغة. اضغط «إضافة» لحفظ أول بيانات دخول.</div>';
+  return h+`<div class="cards">${vd.map((c,i)=>`<div class="card" style="padding:14px"><div class="rw"><h3 style="margin:0">${esc(c.n)}</h3><span><button class="ib" title="تعديل" onclick="cForm(${i})">✎</button><button class="ib" title="حذف" onclick="cDel(${i})">🗑</button></span></div>${c.l?`<div class="cr"><small>الرابط</small><span>${/^https?:\/\//i.test(c.l)?`<a href="${esc(c.l)}" target="_blank" rel="noopener noreferrer" style="color:var(--rd2)">${esc(c.l)}</a>`:esc(c.l)}</span></div>`:''}<div class="cr"><small>المستخدم</small><span>${esc(c.u)}</span><button class="ib" title="نسخ" onclick="cCopy(${i},'u',this)">⧉</button></div><div class="cr"><small>كلمة المرور</small><span>${vshow[i]?esc(c.p):'••••••••••'}</span><button class="ib" title="إظهار / إخفاء" onclick="vshow[${i}]=!vshow[${i}];render()">👁</button><button class="ib" title="نسخ" onclick="cCopy(${i},'p',this)">⧉</button></div>${c.o?`<p style="margin:8px 0 0;color:var(--mu);font-size:14px">${esc(c.o)}</p>`:''}</div>`).join('')}</div>`;
+}
+async function cCopy(i,k,b){try{await navigator.clipboard.writeText(vd[i][k]||'');const t=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=t,1200)}catch(e){alert('تعذّر النسخ')}}
+function cForm(i){const e=i!=null;
+  modal(e?'تعديل بيانات الدخول':'بيانات دخول جديدة',[{k:'n',l:'النظام / الموقع'},{k:'u',l:'اسم المستخدم'},{k:'p',l:'كلمة المرور'},{k:'l',l:'الرابط (اختياري)'},{k:'o',l:'ملاحظات',ta:1}],e?vd[i]:{},async v=>{
+    if(!v.n)return;
+    if(!vk){alert('انتهت الجلسة، افتح الخزنة من جديد');render();return}
+    e?vd[i]=v:vd.unshift(v);vshow={};await vSave();render()});
+  const p=document.body.lastElementChild.querySelector('[name=p]');p.type='password';p.autocomplete='new-password'}
+async function cDel(i){if(!confirm('حذف بيانات الدخول هذه؟'))return;if(!vk)return;vd.splice(i,1);vshow={};await vSave();render()}
 /* roster */
 const ST=['حاضر','غائب','متأخر','في إجازة'];
 function roster(){const sel=(a,i,k,o,cur,r)=>`<select onchange="up('${a}',${i},'${k}',this.value,${r})">${o.map(x=>`<option ${x==cur?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
@@ -131,8 +226,77 @@ render();
 </script>
 <script>
 /* طبقة الاتصال بالخادم: تستبدل التخزين المحلي بواجهة API */
+/* شبكة التحقيق */
+const BT={'شخص':['☹','#e0a82e'],'دليل':['✦','#d4162c'],'موقع':['◉','#3b82f6'],'مركبة':['▣','#22a45d'],'حدث':['⚑','#b06ad4']};
+let bm=0,bf=null,bv={x:0,y:0,z:1};
+function linksSVG(){
+  const N=S.board.nodes,g=id=>N.find(n=>n.id==id);
+  return S.board.links.map((l,i)=>{
+    const a=g(l.a),b=g(l.b);if(!a||!b)return'';
+    const x1=a.x+75,y1=a.y+42,x2=b.x+75,y2=b.y+42,mx=(x1+x2)/2,my=(y1+y2)/2+22;
+    const d=`M${x1} ${y1}Q${mx} ${my} ${x2} ${y2}`;
+    return`<path d="${d}" fill="none" stroke="#d4162c" stroke-width="2" stroke-opacity=".85"/><path d="${d}" fill="none" stroke="transparent" stroke-width="16" style="pointer-events:stroke;cursor:pointer" onclick="bDelL(${i})"/>${l.l?`<text x="${(x1+2*mx+x2)/4}" y="${(y1+2*my+y2)/4-5}" text-anchor="middle" font-size="12" fill="#f3d9a4" stroke="#0b0a0c" stroke-width="3" paint-order="stroke">${esc(l.l)}</text>`:''}`;
+  }).join('');
+}
+function drawLinks(){const s=$('#bsv');if(s)s.innerHTML=linksSVG()}
+function board(){
+  const hint=bm==1?'اختر العقدة الأولى':bm==2?'اختر العقدة الثانية':'اسحب الخلفية للتحريك · العجلة للتكبير · اسحب العقد لتحريكها · انقر عقدة للتعديل · انقر على الخيط لحذفه';
+  return hd('شبكة التحقيق','⌬',`<button class="g" onclick="bReset()" title="إعادة ضبط العرض" style="margin-inline-end:8px">⟲</button><button class="g" onclick="bToggle()">${bm?'إلغاء الربط':'ربط'}</button><button class="b" onclick="bAdd()" style="margin-inline-start:8px">+ عقدة</button>`)
+  +`<div class="bd" style="background-size:${24*bv.z}px ${24*bv.z}px;background-position:${bv.x}px ${bv.y}px" onpointerdown="bPan(event)" onwheel="bWheel(event)"><div class="bc2" style="transform:translate(${bv.x}px,${bv.y}px) scale(${bv.z})"><svg id="bsv">${linksSVG()}</svg>${S.board.nodes.map(n=>{const t=BT[n.t]||BT['شخص'];return`<div class="bn ${n.id==bf?'sel':''}" style="left:${n.x}px;top:${n.y}px;border-top-color:${t[1]};--r:${(parseInt(n.id.slice(-2),36)%5-2)*.8}deg" onpointerdown="nDown(event,'${n.id}')"><i></i><small class="mono">${t[0]} ${esc(n.t)}</small><b>${esc(n.n)}</b><span>${esc(n.o)}</span></div>`}).join('')}</div></div><div class="bh">${hint}</div>`;
+}
+const BF=[{k:'t',l:'النوع',o:Object.keys(BT)},{k:'n',l:'الاسم'},{k:'o',l:'ملاحظة',ta:1}];
+function bAdd(){modal('عقدة جديدة',BF,{t:'شخص'},v=>{if(!v.n)return;S.board.nodes.push({id:'n'+Math.random().toString(36).slice(2,8),t:v.t,n:v.n,o:v.o,x:Math.round((80-bv.x)/bv.z+Math.random()*300),y:Math.round((80-bv.y)/bv.z+Math.random()*200)});save();render()})}
+function bToggle(){bm=bm?0:1;bf=null;render()}
+function bDelL(i){if(confirm('حذف هذا الخيط؟')){S.board.links.splice(i,1);save();render()}}
+function bPick(id){
+  if(bm==1){bf=id;bm=2;render();return}
+  if(id==bf){bm=1;bf=null;render();return}
+  const a=bf;
+  modal('نوع العلاقة',[{k:'l',l:'العلاقة (مثال: يملك، شوهد في)'}],{},v=>{S.board.links.push({a,b:id,l:v.l});bm=1;bf=null;save();render()});
+}
+function nEdit(id){
+  const n=S.board.nodes.find(x=>x.id==id);if(!n)return;
+  modal('تعديل العقدة',[...BF,{k:'act',l:'الإجراء',o:['حفظ','حذف العقدة']}],{...n,act:'حفظ'},v=>{
+    if(v.act=='حذف العقدة'){S.board.nodes=S.board.nodes.filter(x=>x.id!=id);S.board.links=S.board.links.filter(l=>l.a!=id&&l.b!=id)}
+    else if(v.n){n.t=v.t;n.n=v.n;n.o=v.o}
+    save();render();
+  });
+}
+function nDown(e,id){e.stopPropagation();
+  if(bm){bPick(id);return}
+  const n=S.board.nodes.find(x=>x.id==id),el=e.currentTarget,sx=e.clientX,sy=e.clientY,ox=n.x,oy=n.y;let moved=0;
+  el.setPointerCapture(e.pointerId);
+  el.onpointermove=ev=>{const dx=(ev.clientX-sx)/bv.z,dy=(ev.clientY-sy)/bv.z;if(Math.abs(dx)+Math.abs(dy)>3)moved=1;n.x=Math.round(Math.max(-3000,Math.min(4000,ox+dx)));n.y=Math.round(Math.max(-3000,Math.min(4000,oy+dy)));el.style.left=n.x+'px';el.style.top=n.y+'px';drawLinks()};
+  el.onpointerup=()=>{el.onpointermove=el.onpointerup=null;if(moved)save();else nEdit(id)};
+}
+const bPts=new Map();let bPinch=0;
+function bApply(){const c=$('.bc2'),d=$('.bd');if(!c)return;c.style.transform=`translate(${bv.x}px,${bv.y}px) scale(${bv.z})`;d.style.backgroundSize=24*bv.z+'px '+24*bv.z+'px';d.style.backgroundPosition=bv.x+'px '+bv.y+'px'}
+function bZoom(cx,cy,nz){nz=Math.max(.3,Math.min(2.5,nz));const r=$('.bd').getBoundingClientRect(),px=cx-r.left,py=cy-r.top;bv.x=px-(px-bv.x)/bv.z*nz;bv.y=py-(py-bv.y)/bv.z*nz;bv.z=nz}
+function bWheel(e){e.preventDefault();bZoom(e.clientX,e.clientY,bv.z*Math.exp(-e.deltaY*.0015));bApply()}
+function bReset(){bv.x=0;bv.y=0;bv.z=1;bApply()}
+function bPan(e){
+  const d=e.currentTarget;d.setPointerCapture(e.pointerId);bPts.set(e.pointerId,{x:e.clientX,y:e.clientY});d.classList.add('pan');
+  if(bPts.size==2){const[a,b]=[...bPts.values()];bPinch=Math.hypot(a.x-b.x,a.y-b.y)}
+  d.onpointermove=ev=>{
+    const o=bPts.get(ev.pointerId);if(!o)return;
+    bPts.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+    if(bPts.size==2){const[a,b]=[...bPts.values()],dist=Math.hypot(a.x-b.x,a.y-b.y);if(bPinch)bZoom((a.x+b.x)/2,(a.y+b.y)/2,bv.z*dist/bPinch);bPinch=dist}
+    else{bv.x+=ev.clientX-o.x;bv.y+=ev.clientY-o.y}
+    bApply();
+  };
+  d.onpointerup=d.onpointercancel=ev=>{bPts.delete(ev.pointerId);bPinch=0;if(!bPts.size){d.classList.remove('pan');d.onpointermove=d.onpointerup=d.onpointercancel=null}};
+}
+/* ساعة الجلسة */
+const SID=Math.random().toString(16).slice(2,6).toUpperCase();
+setInterval(()=>{const c=$('#clk');if(c)c.textContent='SESSION '+SID+' · '+new Date().toLocaleTimeString('en-GB')},1000);
+/* سجل النشاط في الإدارة */
+async function loadAudit(){const r=await api('GET','/api/audit');S.audit=r.ok?r.data:[]}
+const EV={login:'دخول',fail:'محاولة دخول فاشلة',logout:'خروج'};
+const _admin=admin;
+admin=function(){return _admin()+`<h3>سجل النشاط</h3><div class="tw"><table><tr><th>الوقت<th>المستخدم<th>الحدث</tr>${(S.audit||[]).map(a=>`<tr class="mono"><td dir="ltr">${new Date(a.t).toLocaleString('en-GB',{timeZone:'Asia/Riyadh'})}<td>${esc(a.u)}<td>${esc(EV[a.e]||a.e.replace('edit:','تعديل:'))}</tr>`).join('')}</table></div>`};
+
 $('#app').style.visibility='hidden';
-const SK=['org','threat','note','logo','map','people','sched','ranks','pins',...Object.keys(REC).map(k=>'rec.'+k)];
+const SK=['org','threat','note','logo','map','people','sched','ranks','pins','board',...Object.keys(REC).map(k=>'rec.'+k)];
 const gv=k=>k.startsWith('rec.')?S.rec[k.slice(4)]:S[k];
 let snap={},tm=0;
 const takeSnap=()=>{snap={};SK.forEach(k=>snap[k]=JSON.stringify(gv(k)))};
@@ -158,7 +322,7 @@ async function sync(){
 async function load(){
   const r=await api('GET','/api/state');if(!r.ok)return;
   const d=r.data;
-  S.people=[];S.sched=[];S.ranks=[];S.pins=[];
+  S.people=[];S.sched=[];S.ranks=[];S.pins=[];S.board={nodes:[],links:[]};
   const rec=d.state.rec||{};delete d.state.rec;
   Object.assign(S,d.state);
   S.rec={};Object.keys(REC).forEach(k=>S.rec[k]=rec[k]||[]);
@@ -175,11 +339,34 @@ async function boot(){
   if(m.ok){ME=m.data;me=ME.u;await load()}
   render();$('#app').style.visibility='visible';
 }
-async function go(p){page=p;if(ME){await flush();await load()}render()}
+async function go(p){page=p;if(ME){await flush();await load();if(p=='admin'&&ME.full)await loadAudit()}render()}
+function introFx(u){return new Promise(done=>{
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){done();return}
+  const o=document.createElement('div');o.id='fx';
+  o.innerHTML='<canvas></canvas><pre dir="ltr"></pre><div class="fxs">اضغط أي مفتاح أو انقر للتخطي</div>';
+  document.body.appendChild(o);
+  const c=o.querySelector('canvas'),x=c.getContext('2d'),pre=o.querySelector('pre'),W=c.width=innerWidth,H=c.height=innerHeight,
+    dr=Array.from({length:Math.ceil(W/16)},()=>Math.random()*H/16),t0=Date.now();
+  const rain=setInterval(()=>{x.fillStyle='rgba(7,8,11,.12)';x.fillRect(0,0,W,H);x.fillStyle='#d4162c';x.font='14px Courier New';dr.forEach((y,i)=>{x.fillText('0123456789ABCDEF'[Math.random()*16|0],i*16,y*16);dr[i]=y*16>H&&Math.random()>.97?0:y+1})},50);
+  const hex=()=>Array.from({length:6},()=>Math.random().toString(16).slice(2,6).toUpperCase().padEnd(4,'0')).join(' ');
+  const L=['> INITIALIZING SECURE CHANNEL ...','> HANDSHAKE ............ OK','> USER: '+String(u).toUpperCase(),hex(),hex(),'> VERIFYING CREDENTIALS ... OK',hex(),hex(),'> DECRYPTING SECTOR DATA ...',hex(),hex(),'> ACCESS GRANTED'];
+  let i=0,ended=0;
+  const end=()=>{if(ended)return;ended=1;clearInterval(rain);clearInterval(tx);removeEventListener('keydown',skip,true);o.classList.add('out');setTimeout(()=>{o.remove();done()},350)};
+  const skip=()=>{if(Date.now()-t0>600)end()};
+  const tx=setInterval(()=>{if(i<L.length){pre.textContent+=L[i++]+'\n';pre.scrollTop=pre.scrollHeight}else{clearInterval(tx);setTimeout(end,500)}},170);
+  o.onclick=skip;addEventListener('keydown',skip,true);
+})}
+function togglePw(){const p=$('#lp'),t=$('#lt'),s=p.type=='password';p.type=s?'text':'password';t.textContent=s?'🙈':'👁';t.title=t.ariaLabel=s?'إخفاء كلمة المرور':'إظهار كلمة المرور'}
+function capsChk(e){const w=$('#lw');if(w)w.textContent=(e.getModifierState&&e.getModifierState('CapsLock'))?'⚠ مفتاح Caps Lock مفعّل':''}
 async function login(){
-  const r=await api('POST','/api/login',{u:$('#lu').value.trim(),p:$('#lp').value});
-  if(!r.ok){$('#le').textContent=r.data.error||'تعذّر تسجيل الدخول';return}
-  ME=r.data;me=ME.u;page='dashboard';await load();render();
+  const u=$('#lu').value.trim(),p=$('#lp').value,b=$('#lb'),e=$('#le');
+  if(b.disabled)return;
+  if(!u||!p){e.textContent=!u?'أدخل اسم المستخدم':'أدخل كلمة المرور';(!u?$('#lu'):$('#lp')).focus();return}
+  b.disabled=true;b.textContent='جارٍ التحقق…';e.textContent='';
+  const r=await api('POST','/api/login',{u,p});
+  if(!r.ok){b.disabled=false;b.textContent='تسجيل الدخول';e.textContent=r.data.error||'تعذّر تسجيل الدخول';const f=$('#lp');f.focus();f.select();return}
+  ME=r.data;me=ME.u;page='dashboard';b.textContent='جارٍ الدخول…';
+  await Promise.all([load(),introFx(me)]);render();
 }
 async function logout(){await flush();await api('POST','/api/logout',{});location.reload()}
 async function send(){
@@ -209,5 +396,6 @@ async function addU(){
   if(!r.ok){alert(r.data.error||'تعذّر إنشاء الحساب');return}
   await refreshUsers();render();
 }
+const _go=go;go=function(p){if(p!='vault')vLock();return _go(p)};
 boot();
 </script></body></html>
